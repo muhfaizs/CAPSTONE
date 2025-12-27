@@ -26,9 +26,9 @@
         "LOG_CHANNEL": "stderr",
         "SESSION_DRIVER": "cookie",
         "DB_CONNECTION": "mysql",
-        "DB_HOST": "4gg.h.filess.io",
-        "DB_PORT": "3306",
-        "DB_DATABASE": "db2024_stormtorn",
-        "DB_USERNAME": "db2024_stormtorn"
+        "DB_HOST": "mnuuxq.h.filess.io",
+        "DB_PORT": "61002",
+        "DB_DATABASE": "db_monitoring_riseheldto",
+        "DB_USERNAME": "db_monitoring_riseheldto"
     }
 }
