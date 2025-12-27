@@ -130,9 +130,9 @@
 </head>
 <body>
     <div class="bg-slideshow">
-        <img src="/EMP1.jpeg" class="active" draggable="false">
-        <img src="/EMP2.jpeg" draggable="false">
-        <img src="/EMP3.jpeg" draggable="false">
+        <img src="/images/EMP1.jpeg" class="active" draggable="false">
+        <img src="/images/EMP2.jpeg" draggable="false">
+        <img src="/images/EMP3.jpeg" draggable="false">
     </div>
     <div class="d-flex flex-column justify-content-center align-items-center min-vh-100">
         <div class="forgot-card">

@@ -324,7 +324,7 @@
     
 <div class="sidebar d-flex flex-column">
         <div class="d-flex align-items-center mb-4">
-            <img src="/EMP-Logo-removebg-preview.png" alt="Logo" class="logo">
+            <img src="/images/EMP-Logo-removebg-preview.png" alt="Logo" class="logo">
             <span class="brand">Certification Monitoring</span>
         </div>
         <!-- Profile Sidebar -->
