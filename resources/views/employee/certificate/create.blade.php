@@ -547,7 +547,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const formData = new FormData(form);
         
-        axios.post(form.action, formData, {
+        axios.post('/employee/certificate', formData, {
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 'Content-Type': 'multipart/form-data'
