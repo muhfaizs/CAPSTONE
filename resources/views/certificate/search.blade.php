@@ -1155,11 +1155,11 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="action-icons">
-                                        @if(!empty($cert->file_path))
-                                            <a href="{{ asset('storage/' . $cert->file_path) }}" target="_blank" class="action-icon icon-view" title="{{ __('messages.view') }}">
+                                        @if(!empty($cert->file_content) || !empty($cert->file_path))
+                                            <a href="{{ route('certificate.file', $cert->id) }}" target="_blank" class="action-icon icon-view" title="{{ __('messages.view') }}">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="{{ asset('storage/' . $cert->file_path) }}" download class="action-icon icon-download" title="{{ __('messages.download') }}">
+                                            <a href="{{ route('certificate.file', $cert->id) }}" download class="action-icon icon-download" title="{{ __('messages.download') }}">
                                                 <i class="bi bi-download"></i>
                                             </a>
                                         @endif

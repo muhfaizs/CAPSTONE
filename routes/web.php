@@ -6,7 +6,46 @@ use App\Http\Controllers\CertificateController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\TestMail;
+use Illuminate\Support\Facades\Storage;
+use App\Models\Certificate;
 
+// Route to serve certificate files from database (for Vercel compatibility)
+Route::get('/certificate-file/{id}', function ($id) {
+    $certificate = Certificate::findOrFail($id);
+    
+    // Check if file content exists in database
+    if ($certificate->file_content) {
+        $content = base64_decode($certificate->file_content);
+        $mimeType = $certificate->file_mime_type ?? 'application/pdf';
+        $fileName = $certificate->file_name ?? 'certificate.pdf';
+        
+        return response($content, 200)
+            ->header('Content-Type', $mimeType)
+            ->header('Content-Disposition', 'inline; filename="' . $fileName . '"');
+    }
+    
+    // Fallback to file path if exists
+    if ($certificate->file_path && Storage::disk('public')->exists($certificate->file_path)) {
+        $file = Storage::disk('public')->get($certificate->file_path);
+        $mimeType = Storage::disk('public')->mimeType($certificate->file_path);
+        
+        return response($file, 200)->header('Content-Type', $mimeType);
+    }
+    
+    abort(404, 'File not found');
+})->name('certificate.file')->middleware('auth');
+
+// Route to serve storage files (for Vercel compatibility)
+Route::get('/storage/{path}', function ($path) {
+    if (!Storage::disk('public')->exists($path)) {
+        abort(404);
+    }
+    
+    $file = Storage::disk('public')->get($path);
+    $mimeType = Storage::disk('public')->mimeType($path);
+    
+    return response($file, 200)->header('Content-Type', $mimeType);
+})->where('path', '.*');
 
 Route::get('/', function () {
     if (Auth::check()) {

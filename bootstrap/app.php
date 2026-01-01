@@ -11,6 +11,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust all proxies (required for Vercel)
+        $middleware->trustProxies(at: '*');
+        
         $middleware->alias([
             'setlocale' => \App\Http\Middleware\SetLocale::class,
             'role' => \App\Http\Middleware\CheckRole::class,

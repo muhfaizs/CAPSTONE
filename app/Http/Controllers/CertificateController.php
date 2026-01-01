@@ -45,10 +45,23 @@ class CertificateController extends Controller
             // Mapping field agar sesuai dengan database
             $data['full_name'] = $request->input('name');
             
-            // Handle file upload for manual entry
+            // Handle file upload - store as Base64 in database for Vercel compatibility
             if ($request->hasFile('certificate_file')) {
-                $path = $request->file('certificate_file')->store('certificates', 'public');
-                $data['file_path'] = $path;
+                $file = $request->file('certificate_file');
+                
+                // Store file content as Base64 in database (for Vercel serverless)
+                $data['file_content'] = base64_encode(file_get_contents($file->getRealPath()));
+                $data['file_mime_type'] = $file->getMimeType();
+                $data['file_name'] = $file->getClientOriginalName();
+                
+                // Also try to store in filesystem (works locally, may not persist on Vercel)
+                try {
+                    $path = $file->store('certificates', 'public');
+                    $data['file_path'] = $path;
+                } catch (\Exception $e) {
+                    // Filesystem storage failed (expected on Vercel), continue with DB storage
+                    $data['file_path'] = null;
+                }
             }
 
             Certificate::create($data);
@@ -380,14 +393,28 @@ class CertificateController extends Controller
             
             $certificate = \App\Models\Certificate::findOrFail($certificateId);
 
-            // Handle file upload if present
+            // Handle file upload if present - store as Base64 in database for Vercel
             if ($request->hasFile('certificate_file')) {
+                $file = $request->file('certificate_file');
+                
+                // Store file content as Base64 in database (for Vercel serverless)
+                $data['file_content'] = base64_encode(file_get_contents($file->getRealPath()));
+                $data['file_mime_type'] = $file->getMimeType();
+                $data['file_name'] = $file->getClientOriginalName();
+                
                 // Delete old file if exists
                 if ($certificate->file_path && \Storage::disk('public')->exists($certificate->file_path)) {
                     \Storage::disk('public')->delete($certificate->file_path);
                 }
-                $path = $request->file('certificate_file')->store('certificates', 'public');
-                $data['file_path'] = $path;
+                
+                // Also try to store in filesystem (works locally, may not persist on Vercel)
+                try {
+                    $path = $file->store('certificates', 'public');
+                    $data['file_path'] = $path;
+                } catch (\Exception $e) {
+                    // Filesystem storage failed (expected on Vercel), continue with DB storage
+                    $data['file_path'] = null;
+                }
             }
 
             $certificate->update($data);
