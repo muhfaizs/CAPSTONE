@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ __('messages.search_certificate') }} - Certification Monitoring</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -810,6 +811,35 @@
         .table-responsive::-webkit-scrollbar-thumb:hover {
             background: #a8a8a8;
         }
+
+        /* Hamburger Menu Button for Mobile */
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background: var(--highlight-color, #0d6efd);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
         @media (max-width: 1200px) {
             .cert-card {
                 margin: 0.5rem;
@@ -828,10 +858,18 @@
         }
         
         @media (max-width: 768px) {
+            .sidebar-toggle { display: block; }
+            .sidebar-overlay.active { display: block; }
             .sidebar {
-                width: 100%;
-                position: relative;
-                min-height: auto;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px;
+                z-index: 1000;
+                position: fixed;
+                min-height: 100vh;
+            }
+            .sidebar.active {
+                transform: translateX(0);
             }
             
             .search-container {
@@ -850,7 +888,7 @@
             
             .main-content {
                 margin-left: 0;
-                padding: 0.75rem;
+                padding: 80px 0.75rem 0.75rem 0.75rem;
                 max-width: 100vw;
             }
             
@@ -862,6 +900,84 @@
             
             .table-responsive {
                 font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .card-body {
+                padding: 0.5rem !important;
+            }
+            .table {
+                font-size: 0.7rem;
+            }
+            .table th, .table td {
+                padding: 0.3rem 0.2rem;
+                white-space: nowrap;
+            }
+            .action-icons {
+                flex-wrap: wrap;
+                gap: 3px;
+            }
+            .action-icon {
+                width: 24px;
+                height: 24px;
+                font-size: 0.7rem;
+            }
+            .badge {
+                padding: 0.25rem 0.4rem;
+                font-size: 0.6rem;
+            }
+            h4, .h4 {
+                font-size: 1rem;
+            }
+            .form-control, .form-select {
+                font-size: 0.8rem;
+                padding: 0.3rem 0.5rem;
+            }
+            .btn {
+                font-size: 0.75rem;
+                padding: 0.3rem 0.6rem;
+            }
+            .search-form {
+                padding: 0.75rem;
+            }
+        }
+
+        /* Mobile card view for very small screens */
+        @media (max-width: 480px) {
+            .table-responsive {
+                overflow-x: auto;
+            }
+            .table thead {
+                display: none;
+            }
+            .table tbody tr {
+                display: block;
+                margin-bottom: 0.75rem;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 0.4rem;
+                background: var(--card-bg);
+            }
+            .table tbody td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.3rem 0.4rem;
+                border: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            .table tbody td:last-child {
+                border-bottom: none;
+                justify-content: center;
+            }
+            .table tbody td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                font-size: 0.65rem;
+                color: var(--text-color);
+                opacity: 0.7;
+                text-transform: uppercase;
             }
         }
 
@@ -939,6 +1055,14 @@
     </style>
 </head>
 <body>
+
+<!-- Hamburger Toggle Button -->
+<button class="sidebar-toggle" onclick="toggleSidebar()">
+    <i class="bi bi-list"></i>
+</button>
+<!-- Overlay -->
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
     <div class="sidebar d-flex flex-column">
         <div class="d-flex align-items-center mb-4">
             <img src="/images/EMP-Logo-removebg-preview.png" alt="Logo" class="logo">
@@ -1618,6 +1742,29 @@ document.addEventListener('DOMContentLoaded', function() {
             const lang = this.getAttribute('href').split('/').pop();
             // Simple redirect for language switching
             window.location.href = this.getAttribute('href');
+        });
+    });
+});
+
+// Sidebar toggle for mobile
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+
+// Close sidebar when clicking a link (mobile)
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebarLinks = document.querySelectorAll('.sidebar .nav-link:not(.dropdown-toggle)');
+    sidebarLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                const sidebar = document.querySelector('.sidebar');
+                const overlay = document.querySelector('.sidebar-overlay');
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+            }
         });
     });
 });

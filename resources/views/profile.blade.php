@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{{ __('messages.profile') }} - Certification Monitoring</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
@@ -298,9 +299,149 @@
             background: var(--bg-color);
             min-height: 100vh;
         }
+
+        /* ====================== RESPONSIVE CSS ====================== */
+        /* Hamburger Menu Button */
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background: var(--highlight-color);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        /* Tablet & Small Desktop - max 991px */
+        @media (max-width: 991px) {
+            .sidebar {
+                width: 200px;
+            }
+            .main-content {
+                margin-left: 210px;
+                padding: 1.5rem 1rem;
+            }
+            .profile-card {
+                margin: 1.5rem auto;
+                padding: 1.5rem 1rem;
+            }
+        }
+
+        /* Mobile Landscape & Tablet Portrait - max 768px */
+        @media (max-width: 768px) {
+            .sidebar-toggle {
+                display: block;
+            }
+            .sidebar-overlay.active {
+                display: block;
+            }
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px;
+                z-index: 1000;
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 80px 1rem 1.5rem 1rem;
+            }
+            .profile-card {
+                margin: 1rem auto;
+                padding: 1.5rem 1rem;
+                border-radius: 12px;
+            }
+            .profile-photo {
+                width: 80px;
+                height: 80px;
+            }
+        }
+
+        /* Mobile Portrait - max 576px */
+        @media (max-width: 576px) {
+            .main-content {
+                padding: 70px 0.75rem 1rem 0.75rem;
+            }
+            .profile-card {
+                padding: 1rem 0.75rem;
+                border-radius: 10px;
+                margin: 0.5rem;
+            }
+            .profile-photo {
+                width: 70px;
+                height: 70px;
+            }
+            .form-control, .form-select {
+                font-size: 14px;
+                padding: 0.5rem 0.75rem;
+            }
+            .btn {
+                font-size: 14px;
+                padding: 0.5rem 1rem;
+            }
+            h2, h3, h4 {
+                font-size: 1.25rem;
+            }
+            .row > .col-md-6 {
+                margin-bottom: 0.5rem;
+            }
+        }
+
+        /* Very Small Mobile - max 400px */
+        @media (max-width: 400px) {
+            .sidebar-toggle {
+                top: 10px;
+                left: 10px;
+                padding: 8px 10px;
+                font-size: 1rem;
+            }
+            .main-content {
+                padding: 60px 0.5rem 1rem 0.5rem;
+            }
+            .profile-card {
+                padding: 0.75rem 0.5rem;
+            }
+            .profile-photo {
+                width: 60px;
+                height: 60px;
+            }
+            .form-label {
+                font-size: 13px;
+            }
+            .form-control, .form-select {
+                font-size: 13px;
+            }
+        }
+        /* ====================== END RESPONSIVE CSS ====================== */
     </style>
 </head>
 <body>
+
+<!-- Hamburger Toggle Button -->
+<button class="sidebar-toggle" onclick="toggleSidebar()">
+    <i class="bi bi-list"></i>
+</button>
+<!-- Overlay -->
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
     
 <div class="sidebar d-flex flex-column">
         <div class="d-flex align-items-center mb-4">
@@ -671,6 +812,29 @@
 
                     // Simple redirect for language switching
                     window.location.href = this.getAttribute('href');
+                });
+            });
+        });
+
+        // Sidebar toggle for mobile
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        // Close sidebar when clicking a link (mobile)
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarLinks = document.querySelectorAll('.sidebar .nav-link:not(.dropdown-toggle)');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth <= 768) {
+                        const sidebar = document.querySelector('.sidebar');
+                        const overlay = document.querySelector('.sidebar-overlay');
+                        sidebar.classList.remove('active');
+                        overlay.classList.remove('active');
+                    }
                 });
             });
         });

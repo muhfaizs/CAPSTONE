@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Edit Password - Certification Monitoring</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -333,9 +334,71 @@
             background: #4d6a8a;
             color: #fff !important;
         }
+
+        /* ====================== RESPONSIVE CSS ====================== */
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background: var(--highlight-color);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        @media (max-width: 991px) {
+            .sidebar { width: 200px; }
+            .main-content { margin-left: 210px; padding: 1.5rem 1rem; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-toggle { display: block; }
+            .sidebar-overlay.active { display: block; }
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px;
+                z-index: 1000;
+            }
+            .sidebar.active { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 80px 1rem 1.5rem 1rem; }
+            .edit-password-card { padding: 1.5rem 1rem; margin: 1rem auto; }
+        }
+
+        @media (max-width: 576px) {
+            .main-content { padding: 70px 0.75rem 1rem 0.75rem; }
+            .edit-password-card { padding: 1rem 0.75rem; }
+            .form-control { font-size: 14px; }
+        }
+        /* ====================== END RESPONSIVE CSS ====================== */
     </style>
 </head>
 <body>
+
+<!-- Hamburger Toggle Button -->
+<button class="sidebar-toggle" onclick="toggleSidebar()">
+    <i class="bi bi-list"></i>
+</button>
+<!-- Overlay -->
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
 <div class="sidebar d-flex flex-column">
         <div class="d-flex align-items-center mb-4">
             <img src="/images/EMP-Logo-removebg-preview.png" alt="Logo" class="logo">
@@ -669,6 +732,29 @@
 
                     // Simple redirect for language switching
                     window.location.href = this.getAttribute('href');
+                });
+            });
+        });
+
+        // Sidebar toggle for mobile
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        // Close sidebar when clicking a link (mobile)
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarLinks = document.querySelectorAll('.sidebar .nav-link:not(.dropdown-toggle)');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth <= 768) {
+                        const sidebar = document.querySelector('.sidebar');
+                        const overlay = document.querySelector('.sidebar-overlay');
+                        sidebar.classList.remove('active');
+                        overlay.classList.remove('active');
+                    }
                 });
             });
         });

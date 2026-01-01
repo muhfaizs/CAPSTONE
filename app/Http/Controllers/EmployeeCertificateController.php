@@ -43,6 +43,8 @@ class EmployeeCertificateController extends Controller
             $data = $request->all();
             // Mapping field agar sesuai dengan database
             $data['full_name'] = $request->input('name');
+            // Track who created this certificate
+            $data['created_by_user_id'] = Auth::id();
             
             // Handle file upload - store as Base64 in database for Vercel compatibility
             if ($request->hasFile('certificate_file')) {
@@ -252,7 +254,13 @@ class EmployeeCertificateController extends Controller
         try {
             $certificate = Certificate::findOrFail($id);
             
-            // Employee bisa delete sertifikat yang mereka buat (tidak perlu strict check)
+            // Employee hanya bisa menghapus sertifikat yang mereka buat sendiri
+            if ($certificate->created_by_user_id !== Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki izin untuk menghapus sertifikat ini.'
+                ], 403);
+            }
 
             // Delete file if exists
             if ($certificate->file_path) {

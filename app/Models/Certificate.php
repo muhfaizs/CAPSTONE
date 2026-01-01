@@ -21,8 +21,17 @@ class Certificate extends Model
         'file_content',
         'file_mime_type',
         'file_name',
+        'created_by_user_id',
         // kolom lain jika ada
     ];
+
+    /**
+     * Get the user who created this certificate
+     */
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
+    }
 
     /**
      * Check if the certificate has stored file content (for Vercel deployment)

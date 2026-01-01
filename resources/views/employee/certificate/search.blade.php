@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ __('messages.search_certificate') }} - Certification Monitoring</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -297,20 +298,149 @@
             background: #2d2d2d;
         }
 
-        @media (max-width: 768px) {
+        /* Hamburger Menu Button for Mobile */
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background: var(--highlight-color, #0d6efd);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        @media (max-width: 991px) {
             .main-content {
-                margin-left: 0;
+                margin-left: 210px;
                 padding: 1rem;
             }
             .sidebar {
-                width: 100%;
-                position: relative;
-                min-height: auto;
+                width: 200px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-toggle { display: block; }
+            .sidebar-overlay.active { display: block; }
+            .main-content {
+                margin-left: 0;
+                padding: 80px 1rem 1rem 1rem;
+            }
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px;
+                z-index: 1000;
+                position: fixed;
+                min-height: 100vh;
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .sidebar .d-flex.align-items-center.mb-4 {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .card-body {
+                padding: 0.75rem !important;
+            }
+            .table {
+                font-size: 0.75rem;
+            }
+            .table th, .table td {
+                padding: 0.4rem 0.3rem;
+                white-space: nowrap;
+            }
+            .action-icons {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .action-icon {
+                width: 28px;
+                height: 28px;
+            }
+            .badge {
+                padding: 0.3rem 0.5rem;
+                font-size: 0.65rem;
+            }
+            h4 {
+                font-size: 1.1rem;
+            }
+            .form-control, .form-select {
+                font-size: 0.85rem;
+            }
+            .btn {
+                font-size: 0.8rem;
+                padding: 0.4rem 0.8rem;
+            }
+        }
+
+        /* Mobile card view for very small screens */
+        @media (max-width: 480px) {
+            .table-responsive {
+                overflow-x: auto;
+            }
+            .table thead {
+                display: none;
+            }
+            .table tbody tr {
+                display: block;
+                margin-bottom: 1rem;
+                border: 1px solid var(--border-color);
+                border-radius: 10px;
+                padding: 0.5rem;
+                background: var(--card-bg);
+            }
+            .table tbody td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.4rem 0.5rem;
+                border: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            .table tbody td:last-child {
+                border-bottom: none;
+                justify-content: center;
+            }
+            .table tbody td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                font-size: 0.7rem;
+                color: var(--text-color);
+                opacity: 0.7;
+                text-transform: uppercase;
             }
         }
     </style>
 </head>
 <body>
+
+<!-- Hamburger Toggle Button -->
+<button class="sidebar-toggle" onclick="toggleSidebar()">
+    <i class="bi bi-list"></i>
+</button>
+<!-- Overlay -->
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
     
 <div class="sidebar d-flex flex-column">
     <div class="d-flex align-items-center mb-4">
@@ -470,14 +600,14 @@
                     <tbody>
                         @foreach($certificates as $index => $cert)
                             <tr>
-                                <td>{{ $certificates->firstItem() + $index }}</td>
-                                <td>{{ $cert->full_name }}</td>
-                                <td>{{ $cert->qualification }}</td>
-                                <td>{{ $cert->lsp }}</td>
-                                <td>{{ $cert->certificate_registration_number }}</td>
-                                <td>{{ $cert->issue_date ? \Carbon\Carbon::parse($cert->issue_date)->format('d/m/Y') : '-' }}</td>
-                                <td>{{ $cert->expiry_date ? \Carbon\Carbon::parse($cert->expiry_date)->format('d/m/Y') : '-' }}</td>
-                                <td>
+                                <td data-label="No">{{ $certificates->firstItem() + $index }}</td>
+                                <td data-label="{{ __('messages.name') }}">{{ $cert->full_name }}</td>
+                                <td data-label="{{ __('messages.qualification') }}">{{ $cert->qualification }}</td>
+                                <td data-label="{{ __('messages.lsp') }}">{{ $cert->lsp }}</td>
+                                <td data-label="{{ __('messages.registration_number') }}">{{ $cert->certificate_registration_number }}</td>
+                                <td data-label="{{ __('messages.issued_date') }}">{{ $cert->issue_date ? \Carbon\Carbon::parse($cert->issue_date)->format('d/m/Y') : '-' }}</td>
+                                <td data-label="{{ __('messages.valid_until') }}">{{ $cert->expiry_date ? \Carbon\Carbon::parse($cert->expiry_date)->format('d/m/Y') : '-' }}</td>
+                                <td data-label="{{ __('messages.status') }}">
                                     @if($cert->expiry_date && \Carbon\Carbon::parse($cert->expiry_date)->isPast())
                                         <span class="badge bg-danger">Expired</span>
                                     @elseif($cert->expiry_date && \Carbon\Carbon::parse($cert->expiry_date)->diffInDays(now()) <= 30)
@@ -486,7 +616,7 @@
                                         <span class="badge bg-success">Active</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td data-label="{{ __('messages.actions') }}">
                                     <div class="action-icons">
                                         @if($cert->file_content || $cert->file_path)
                                             <a href="{{ route('certificate.file', $cert->id) }}" target="_blank" class="action-icon icon-view" title="View PDF">
@@ -496,9 +626,11 @@
                                                 <i class="bi bi-download"></i>
                                             </a>
                                         @endif
-                                        <button type="button" class="action-icon icon-delete" onclick="deleteCertificate({{ $cert->id }})" title="Delete">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        @if($cert->created_by_user_id == Auth::id())
+                                            <button type="button" class="action-icon icon-delete" onclick="deleteCertificate({{ $cert->id }})" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -717,6 +849,29 @@ document.getElementById('confirmDelete').addEventListener('click', function() {
             alert('Error deleting certificate');
         });
     }
+});
+
+// Sidebar toggle for mobile
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+
+// Close sidebar when clicking a link (mobile)
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebarLinks = document.querySelectorAll('.sidebar .nav-link:not(.dropdown-toggle)');
+    sidebarLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                const sidebar = document.querySelector('.sidebar');
+                const overlay = document.querySelector('.sidebar-overlay');
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+            }
+        });
+    });
 });
 </script>
 </body>

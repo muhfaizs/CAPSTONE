@@ -44,6 +44,8 @@ class CertificateController extends Controller
             $data = $request->all();
             // Mapping field agar sesuai dengan database
             $data['full_name'] = $request->input('name');
+            // Track who created this certificate
+            $data['created_by_user_id'] = \Illuminate\Support\Facades\Auth::id();
             
             // Handle file upload - store as Base64 in database for Vercel compatibility
             if ($request->hasFile('certificate_file')) {
