@@ -264,30 +264,56 @@ class CertificateController extends Controller
 
         try {
             // Set temp directory for PhpSpreadsheet (Vercel read-only filesystem workaround)
-            $tempDir = sys_get_temp_dir();
-            if (!is_writable($tempDir)) {
-                $tempDir = '/tmp';
-            }
-            \PhpOffice\PhpSpreadsheet\Settings::setTempDir($tempDir);
+            putenv('TMPDIR=/tmp');
+            \PhpOffice\PhpSpreadsheet\Settings::setTempDir('/tmp');
             
-            // Move file to /tmp for Vercel
             $file = $request->file('excel_file');
-            $tempPath = $tempDir . '/' . uniqid('excel_') . '.' . $file->getClientOriginalExtension();
             
-            // Copy file to temp directory
-            copy($file->getRealPath(), $tempPath);
+            // Read spreadsheet directly from uploaded file
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($file->getRealPath());
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($file->getRealPath());
+            $worksheet = $spreadsheet->getActiveSheet();
+            $rows = $worksheet->toArray();
             
-            // Import from temp path
-            Excel::import(new CertificateImport, $tempPath);
+            // Get header row (first row) and convert to lowercase
+            $headers = array_map(function($h) {
+                return strtolower(trim(str_replace(['.', ' ', '/'], ['', '_', '_'], $h ?? '')));
+            }, $rows[0]);
             
-            // Clean up temp file
-            if (file_exists($tempPath)) {
-                unlink($tempPath);
+            $importedCount = 0;
+            
+            // Process data rows (skip header)
+            for ($i = 1; $i < count($rows); $i++) {
+                $row = $rows[$i];
+                $data = [];
+                
+                // Map row values to headers
+                foreach ($headers as $index => $header) {
+                    $data[$header] = $row[$index] ?? null;
+                }
+                
+                // Skip if required fields are empty
+                if (empty($data['nama']) || empty($data['kualifikasi'])) {
+                    continue;
+                }
+                
+                // Create certificate
+                Certificate::create([
+                    'full_name' => $data['nama'] ?? null,
+                    'company_name' => $data['perusahaan'] ?? null,
+                    'qualification' => $data['kualifikasi'] ?? null,
+                    'lsp' => $data['lsp'] ?? null,
+                    'certificate_registration_number' => $data['no_registrasi'] ?? null,
+                    'issue_date' => $this->parseExcelDate($data['dikeluarkan'] ?? null),
+                    'expiry_date' => $this->parseExcelDate($data['berlaku_sd'] ?? null),
+                ]);
+                $importedCount++;
             }
             
             return response()->json([
                 'success' => true,
-                'message' => 'Data berhasil diimpor!',
+                'message' => "Berhasil mengimpor {$importedCount} data sertifikat!",
                 'redirect' => route('certificate.search')
             ]);
             
@@ -297,6 +323,35 @@ class CertificateController extends Controller
                 'message' => 'Error importing data: ' . $e->getMessage()
             ], 422);
         }
+    }
+    
+    private function parseExcelDate($value)
+    {
+        if (empty($value)) {
+            return null;
+        }
+        
+        // If numeric (Excel serial date)
+        if (is_numeric($value)) {
+            return date('Y-m-d', \PhpOffice\PhpSpreadsheet\Shared\Date::excelToTimestamp($value));
+        }
+        
+        // Try various date formats
+        $formats = ['d-M-y', 'd-M-Y', 'd/m/Y', 'd/m/y', 'Y-m-d'];
+        foreach ($formats as $format) {
+            $dt = \DateTime::createFromFormat($format, $value);
+            if ($dt) {
+                return $dt->format('Y-m-d');
+            }
+        }
+        
+        // Try strtotime
+        $timestamp = strtotime(str_replace('/', '-', $value));
+        if ($timestamp) {
+            return date('Y-m-d', $timestamp);
+        }
+        
+        return null;
     }
 
     public function previewPdf(Request $request)
