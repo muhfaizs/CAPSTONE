@@ -263,9 +263,16 @@ class CertificateController extends Controller
         ]);
 
         try {
-            // Move file to /tmp for Vercel (read-only filesystem workaround)
+            // Set temp directory for PhpSpreadsheet (Vercel read-only filesystem workaround)
+            $tempDir = sys_get_temp_dir();
+            if (!is_writable($tempDir)) {
+                $tempDir = '/tmp';
+            }
+            \PhpOffice\PhpSpreadsheet\Settings::setTempDir($tempDir);
+            
+            // Move file to /tmp for Vercel
             $file = $request->file('excel_file');
-            $tempPath = '/tmp/' . uniqid('excel_') . '.' . $file->getClientOriginalExtension();
+            $tempPath = $tempDir . '/' . uniqid('excel_') . '.' . $file->getClientOriginalExtension();
             
             // Copy file to temp directory
             copy($file->getRealPath(), $tempPath);
