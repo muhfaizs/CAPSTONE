@@ -263,36 +263,17 @@ class CertificateController extends Controller
         ]);
 
         try {
-            // Vercel read-only filesystem workaround - set all temp dirs to /tmp FIRST
-            $tmpDir = '/tmp';
-            putenv("TMPDIR={$tmpDir}");
-            putenv("TMP={$tmpDir}");
-            putenv("TEMP={$tmpDir}");
-            
-            // Also set PHP's upload_tmp_dir at runtime if possible
-            if (function_exists('ini_set')) {
-                @ini_set('upload_tmp_dir', $tmpDir);
-                @ini_set('sys_temp_dir', $tmpDir);
-            }
-            
-            // Set PhpSpreadsheet temp directory
-            \PhpOffice\PhpSpreadsheet\Settings::setTempDir($tmpDir);
-            
             $file = $request->file('excel_file');
             
-            // Copy uploaded file to /tmp first
-            $tempFilePath = $tmpDir . '/excel_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            copy($file->getRealPath(), $tempFilePath);
+            // Parse XLSX manually (XLSX is a ZIP file with XML content)
+            $rows = $this->parseXlsxFile($file->getRealPath());
             
-            // Read spreadsheet from temp location
-            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($tempFilePath);
-            $reader->setReadDataOnly(true);
-            $spreadsheet = $reader->load($tempFilePath);
-            $worksheet = $spreadsheet->getActiveSheet();
-            $rows = $worksheet->toArray();
-            
-            // Clean up temp file
-            @unlink($tempFilePath);
+            if (empty($rows)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File Excel kosong atau format tidak valid'
+                ], 422);
+            }
             
             // Get header row (first row) and convert to lowercase
             $headers = array_map(function($h) {
@@ -343,6 +324,110 @@ class CertificateController extends Controller
         }
     }
     
+    /**
+     * Parse XLSX file manually without temp directory requirement
+     */
+    private function parseXlsxFile($filePath)
+    {
+        $rows = [];
+        
+        // Read file content into memory
+        $fileContent = file_get_contents($filePath);
+        
+        // Create temp file in /tmp (writable on Vercel)
+        $tmpFile = '/tmp/xlsx_' . uniqid() . '.xlsx';
+        file_put_contents($tmpFile, $fileContent);
+        
+        $zip = new \ZipArchive();
+        if ($zip->open($tmpFile) !== true) {
+            @unlink($tmpFile);
+            throw new \Exception('Cannot open XLSX file');
+        }
+        
+        // Read shared strings (for cell values)
+        $sharedStrings = [];
+        $sharedStringsXml = $zip->getFromName('xl/sharedStrings.xml');
+        if ($sharedStringsXml) {
+            $xml = simplexml_load_string($sharedStringsXml);
+            foreach ($xml->si as $si) {
+                if (isset($si->t)) {
+                    $sharedStrings[] = (string)$si->t;
+                } elseif (isset($si->r)) {
+                    $text = '';
+                    foreach ($si->r as $r) {
+                        $text .= (string)$r->t;
+                    }
+                    $sharedStrings[] = $text;
+                }
+            }
+        }
+        
+        // Read worksheet
+        $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
+        if (!$sheetXml) {
+            $zip->close();
+            @unlink($tmpFile);
+            throw new \Exception('Cannot read worksheet');
+        }
+        
+        $xml = simplexml_load_string($sheetXml);
+        
+        foreach ($xml->sheetData->row as $row) {
+            $rowData = [];
+            $maxCol = 0;
+            
+            foreach ($row->c as $cell) {
+                $cellRef = (string)$cell['r'];
+                $colIndex = $this->columnToIndex($cellRef);
+                $maxCol = max($maxCol, $colIndex);
+                
+                // Fill gaps with null
+                while (count($rowData) < $colIndex) {
+                    $rowData[] = null;
+                }
+                
+                $value = null;
+                $type = (string)$cell['t'];
+                
+                if ($type === 's') {
+                    // Shared string
+                    $index = (int)$cell->v;
+                    $value = $sharedStrings[$index] ?? null;
+                } elseif ($type === 'inlineStr') {
+                    $value = (string)$cell->is->t;
+                } else {
+                    $value = (string)$cell->v;
+                }
+                
+                $rowData[$colIndex] = $value;
+            }
+            
+            if (!empty(array_filter($rowData))) {
+                $rows[] = $rowData;
+            }
+        }
+        
+        $zip->close();
+        @unlink($tmpFile);
+        
+        return $rows;
+    }
+    
+    /**
+     * Convert Excel column reference to index (A=0, B=1, etc.)
+     */
+    private function columnToIndex($cellRef)
+    {
+        preg_match('/([A-Z]+)/', $cellRef, $matches);
+        $col = $matches[1] ?? 'A';
+        $index = 0;
+        $length = strlen($col);
+        for ($i = 0; $i < $length; $i++) {
+            $index = $index * 26 + (ord($col[$i]) - ord('A') + 1);
+        }
+        return $index - 1;
+    }
+    
     private function parseExcelDate($value)
     {
         if (empty($value)) {
@@ -351,7 +436,10 @@ class CertificateController extends Controller
         
         // If numeric (Excel serial date)
         if (is_numeric($value)) {
-            return date('Y-m-d', \PhpOffice\PhpSpreadsheet\Shared\Date::excelToTimestamp($value));
+            // Excel date serial number to Unix timestamp
+            // Excel dates start from 1900-01-01, Unix from 1970-01-01
+            $unixTimestamp = ($value - 25569) * 86400;
+            return date('Y-m-d', $unixTimestamp);
         }
         
         // Try various date formats
