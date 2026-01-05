@@ -263,7 +263,20 @@ class CertificateController extends Controller
         ]);
 
         try {
-            Excel::import(new CertificateImport, $request->file('excel_file'));
+            // Move file to /tmp for Vercel (read-only filesystem workaround)
+            $file = $request->file('excel_file');
+            $tempPath = '/tmp/' . uniqid('excel_') . '.' . $file->getClientOriginalExtension();
+            
+            // Copy file to temp directory
+            copy($file->getRealPath(), $tempPath);
+            
+            // Import from temp path
+            Excel::import(new CertificateImport, $tempPath);
+            
+            // Clean up temp file
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
             
             return response()->json([
                 'success' => true,
