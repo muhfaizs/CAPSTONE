@@ -28,5 +28,13 @@ class AppServiceProvider extends ServiceProvider
         if (session()->has('locale')) {
             app()->setLocale(session('locale'));
         }
+        
+        // Set temp directory for Vercel (read-only filesystem)
+        $tmpDir = '/tmp';
+        if (!is_writable(sys_get_temp_dir())) {
+            putenv("TMPDIR={$tmpDir}");
+            putenv("TMP={$tmpDir}");
+            putenv("TEMP={$tmpDir}");
+        }
     }
 }

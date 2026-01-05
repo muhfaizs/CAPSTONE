@@ -263,18 +263,36 @@ class CertificateController extends Controller
         ]);
 
         try {
-            // Set temp directory for PhpSpreadsheet (Vercel read-only filesystem workaround)
-            putenv('TMPDIR=/tmp');
-            \PhpOffice\PhpSpreadsheet\Settings::setTempDir('/tmp');
+            // Vercel read-only filesystem workaround - set all temp dirs to /tmp FIRST
+            $tmpDir = '/tmp';
+            putenv("TMPDIR={$tmpDir}");
+            putenv("TMP={$tmpDir}");
+            putenv("TEMP={$tmpDir}");
+            
+            // Also set PHP's upload_tmp_dir at runtime if possible
+            if (function_exists('ini_set')) {
+                @ini_set('upload_tmp_dir', $tmpDir);
+                @ini_set('sys_temp_dir', $tmpDir);
+            }
+            
+            // Set PhpSpreadsheet temp directory
+            \PhpOffice\PhpSpreadsheet\Settings::setTempDir($tmpDir);
             
             $file = $request->file('excel_file');
             
-            // Read spreadsheet directly from uploaded file
-            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($file->getRealPath());
+            // Copy uploaded file to /tmp first
+            $tempFilePath = $tmpDir . '/excel_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            copy($file->getRealPath(), $tempFilePath);
+            
+            // Read spreadsheet from temp location
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($tempFilePath);
             $reader->setReadDataOnly(true);
-            $spreadsheet = $reader->load($file->getRealPath());
+            $spreadsheet = $reader->load($tempFilePath);
             $worksheet = $spreadsheet->getActiveSheet();
             $rows = $worksheet->toArray();
+            
+            // Clean up temp file
+            @unlink($tempFilePath);
             
             // Get header row (first row) and convert to lowercase
             $headers = array_map(function($h) {
