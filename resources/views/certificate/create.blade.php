@@ -1615,6 +1615,10 @@ document.addEventListener('DOMContentLoaded', function() {
         excelForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
+            // Get submit button and original text first
+            const submitBtn = excelForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+
             const formData = new FormData(this);
 
             // Debug: Log FormData contents
@@ -1627,8 +1631,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const fileInput = document.getElementById('excel_file');
             if (!fileInput || fileInput.files.length === 0) {
                 alert('{{ __("messages.select_excel_file_first") }}');
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
                 return;
             }
 
@@ -1639,8 +1641,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const allowedTypes = ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
             if (!allowedTypes.includes(file.type) && !file.name.match(/\.(xls|xlsx)$/i)) {
                 alert('{{ __("messages.invalid_excel_file") }}');
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
                 return;
             }
 
@@ -1648,14 +1648,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const maxSize = 10 * 1024 * 1024; // 10MB
             if (file.size > maxSize) {
                 alert('{{ __("messages.file_too_large") }}');
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
                 return;
             }
 
             // Show loading state
-            const submitBtn = excelForm.querySelector('button[type="submit"]');
-            const originalText = submitBtn.textContent;
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>{{ __("messages.loading") }}...';
 

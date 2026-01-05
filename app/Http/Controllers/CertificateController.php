@@ -259,11 +259,11 @@ class CertificateController extends Controller
     public function importExcel(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls'
+            'excel_file' => 'required|file|mimes:xlsx,xls'
         ]);
 
         try {
-            Excel::import(new CertificateImport, $request->file('file'));
+            Excel::import(new CertificateImport, $request->file('excel_file'));
             
             return response()->json([
                 'success' => true,
